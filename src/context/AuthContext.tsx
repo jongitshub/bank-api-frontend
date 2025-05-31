@@ -5,12 +5,15 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { jwtDecode } from "jwt-decode"; // ✅ correct for ES module setup
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
-
-interface DecodedToken {
-  sub: string; // this could be 'email' or 'username' depending on your JWT payload
-  [key: string]: any;
+interface UserData {
+  username: string;
+  role: string;
+  accountNumber: string;
+  accountType: string;
+  balance: number;
 }
 
 interface AuthContextType {
@@ -18,7 +21,7 @@ interface AuthContextType {
   login: (token: string) => void;
   logout: () => void;
   token: string | null;
-  user: string | null;
+  user: UserData | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,30 +34,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setToken] = useState<string | null>(
     () => localStorage.getItem("token")
   );
-
-  const [user, setUser] = useState<string | null>(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      try {
-        const decoded = jwtDecode<DecodedToken>(storedToken);
-
-        return decoded.sub; // or decoded.email / decoded.username
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
+  const [user, setUser] = useState<UserData | null>(null);
   const isAuthenticated = !!token;
+
+  const fetchUser = async (jwt: string) => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/users/me", {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+      setUser(res.data);
+    } catch (err) {
+      console.error("Failed to fetch user info", err);
+      setUser(null);
+    }
+  };
 
   const login = (jwt: string) => {
     localStorage.setItem("token", jwt);
     setToken(jwt);
-    try {
-      const decoded = jwtDecode<DecodedToken>(jwt);
 
-      setUser(decoded.sub);
+    try {
+      jwtDecode(jwt); // Just validates format
+      fetchUser(jwt);
     } catch {
       setUser(null);
     }
@@ -65,6 +68,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setToken(null);
     setUser(null);
   };
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      fetchUser(storedToken);
+    }
+  }, []);
 
   return (
     <AuthContext.Provider

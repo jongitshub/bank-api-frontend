@@ -23,8 +23,14 @@ const AuthNavbar = () => {
       <Link to="/dashboard" className="text-2xl font-bold text-blue-600">
         BankApp
       </Link>
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-600">Welcome, {user}</span>
+
+      <div className="flex items-center gap-6">
+        {user && (
+          <span className="text-sm text-gray-600">
+            Welcome, <strong>{user.username}</strong>
+          </span>
+        )}
+
         <Link to="/dashboard" className={linkClasses("/dashboard")}>
           Dashboard
         </Link>
@@ -34,6 +40,7 @@ const AuthNavbar = () => {
         <Link to="/transactions" className={linkClasses("/transactions")}>
           Transactions
         </Link>
+
         <button
           onClick={handleLogout}
           className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
