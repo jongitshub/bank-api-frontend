@@ -16,6 +16,7 @@ interface LoanRequest {
 const AdminPanel = () => {
   const { token, logout } = useAuth();
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
+  const [reserve, setReserve] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -31,6 +32,19 @@ const AdminPanel = () => {
       console.error("Failed to load pending loan requests:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReserve = async () => {
+    try {
+      const res = await axios.get("/api/admin/reserve", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setReserve(res.data.reserve);
+    } catch (err) {
+      console.error("Failed to fetch reserve balance", err);
     }
   };
 
@@ -54,12 +68,20 @@ const AdminPanel = () => {
 
   useEffect(() => {
     fetchPendingLoans();
+    fetchReserve();
   }, []);
 
   return (
     <div className="max-w-5xl mx-auto mt-10 p-6 bg-white shadow-md rounded">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Admin Panel - Pending Loans</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Admin Panel - Pending Loans</h2>
+          {reserve !== null && (
+            <p className="text-gray-600 text-sm mt-1">
+              🏦 Bank Reserve: <strong>${reserve.toLocaleString()}</strong>
+            </p>
+          )}
+        </div>
         <button
           onClick={handleLogout}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"

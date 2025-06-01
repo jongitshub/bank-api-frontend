@@ -1,8 +1,40 @@
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthNavbar from "../components/AuthNavbar";
+import axios from "../api/axios";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const [amount, setAmount] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLoanRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("");
+    setError("");
+
+    if (!amount || isNaN(+amount)) {
+      setError("Please enter a valid amount.");
+      return;
+    }
+
+    try {
+      await axios.post(
+        "/api/loans/request",
+        { amount: parseFloat(amount) },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMessage("Loan request submitted!");
+      setAmount("");
+    } catch (err: any) {
+      setError(err.response?.data || "Failed to submit loan request.");
+    }
+  };
 
   return (
     <>
@@ -21,9 +53,30 @@ const Dashboard = () => {
           <p className="text-gray-500">Loading account info...</p>
         )}
 
-        <p className="text-gray-700">
+        <p className="text-gray-700 mb-6">
           Use the navigation bar to transfer funds or view your transactions.
         </p>
+
+        {/* Loan Request Form */}
+        <form onSubmit={handleLoanRequest} className="space-y-4">
+          <h3 className="text-xl font-semibold">Request a Loan</h3>
+          <input
+            type="number"
+            placeholder="Enter loan amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full px-3 py-2 border rounded"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Submit Loan Request
+          </button>
+          {message && <p className="text-green-600">{message}</p>}
+          {error && <p className="text-red-500">{error}</p>}
+        </form>
       </div>
     </>
   );
